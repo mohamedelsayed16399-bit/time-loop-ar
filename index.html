@@ -31,7 +31,7 @@ h1{margin:0 0 4px;font-size:34px;background:linear-gradient(90deg,#38bdf8,#c084f
 .big.alt{background:#1b2650;border:1px solid #33427f}
 #wst{font-size:44px;margin-bottom:6px}#wtx{margin-bottom:14px;font-size:15px}
 </style></head><body>
-<div id="app"><div id="top"><button class="ib" id="bm">☰</button><div id="lname"></div><span class="pill" id="cl"></span><span class="pill" id="st"></span><button class="ib" id="hb">💡</button><button class="ib" id="mu">🔊</button></div>
+<div id="app"><div id="top"><button class="ib" id="bm">☰</button><div id="lname"></div><span class="pill" id="cl"></span><span class="pill" id="st"></span><button class="ib" id="th">🎨</button><button class="ib" id="hb">💡</button><button class="ib" id="mu">🔊</button></div>
 <div id="hint"></div><canvas id="cv"></canvas>
 <div id="ctl"><div class="row"><button class="act" id="nl">👥 حلقة جديدة</button><button class="act" id="ud">↩ تراجع</button></div>
 <div id="dp"><span></span><button data-m="U">▲</button><span></span><button data-m="L">◀</button><button id="wt">⏳</button><button data-m="R">▶</button><span></span><button data-m="D">▼</button><span></span></div>
@@ -43,13 +43,14 @@ const DIR={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0],W:[0,0]};
 const kk=(x,y)=>x+','+y;
 function parseLevel(def){
   const rows=def.map,h=rows.length,w=Math.max(...rows.map(r=>r.length));
-  const L={name:def.name,hint:def.hint||'',w,h,wall:[],start:null,exit:null,plates:[],doors:{},spikes:{},tele:{},tp:{},lasers:{},
+  const L={name:def.name,hint:def.hint||'',w,h,wall:[],start:null,exit:null,plates:[],doors:{},spikes:{},tele:{},conv:{},tp:{},lasers:{},
     guards:(def.guards||[]).map(g=>g.map(p=>({x:p[0],y:p[1]}))),max:def.max||3,par:def.par||2};
   for(let y=0;y<h;y++){L.wall.push([]);for(let x=0;x<w;x++){const c=rows[y][x]||'#';L.wall[y].push(c==='#');
     if(c==='S')L.start={x,y};else if(c==='E')L.exit={x,y};
     else if(c>='a'&&c<='d')L.plates.push({x,y,c});
     else if(c>='A'&&c<='D')L.doors[kk(x,y)]=c.toLowerCase();
     else if(c==='x')L.spikes[kk(x,y)]=1;
+    else if('^v<>'.includes(c))L.conv[kk(x,y)]=c;
     else if(c==='l'||c==='m')L.lasers[kk(x,y)]=c==='l'?0:1;
     else if(c>='1'&&c<='4'){(L.tp[c]=L.tp[c]||[]).push({x,y})}}}
   for(const c in L.tp){const a=L.tp[c];if(a.length===2){L.tele[kk(a[0].x,a[0].y)]=a[1];L.tele[kk(a[1].x,a[1].y)]=a[0]}}
@@ -66,6 +67,7 @@ function tryMove(L,clones,pos,t,mv){
     if(!doorOpen(L,nx,ny,actorsAt(clones,pos,t)))return{ok:false};}
   let dead=!!L.spikes[kk(nx,ny)];
   let fx=nx,fy=ny;const tl=L.tele[kk(nx,ny)];if(tl&&mv!=='W'){fx=tl.x;fy=tl.y}
+  const cv=L.conv[kk(fx,fy)];if(cv&&mv!=='W'){const q={'^':[0,-1],'v':[0,1],'<':[-1,0],'>':[1,0]}[cv],cx=fx+q[0],cy=fy+q[1];if(!isWall(L,cx,cy)&&doorOpen(L,cx,cy,actorsAt(clones,pos,t))){fx=cx;fy=cy;if(L.spikes[kk(fx,fy)])dead=true}}
   const lz=L.lasers[kk(fx,fy)];if(lz!==undefined&&(((t+1)>>1)&1)===lz)dead=true;
   L.guards.forEach((g,i)=>{const g1=guardPos(L,i,t+1),g0=guardPos(L,i,t);
     if(g1.x===fx&&g1.y===fy)dead=true;
@@ -89,7 +91,7 @@ function solve(L,maxRuns,TMAX=48,clones=[],sol=[]){
     const k=n.x+','+n.y;if(tried.has(k))continue;tried.add(k);
     const p=pathOf(nodes,i),r=solve(L,maxRuns,TMAX,clones.concat([p.pos]),sol.concat([p.mvs]));if(r)return r;}
   return null;}
-const LEVELS=[{"name":"أول حلقة","hint":"قف على اللوحة، ابدأ حلقة جديدة، وبعدين نسختك هتفتحلك الباب","par":1,"max":2,"map":["#########","#S.a.A.E#","#########"]},{"name":"بابين ورا بعض","hint":"كل نسخة بتعيد حركاتك بالظبط","par":2,"max":3,"map":["#########","#S.a.A..#","#######.#","#E.B.b..#","#########"]},{"name":"الحارس","hint":"استخبى في الحفرة لما الحارس يعدي","par":0,"max":1,"map":["#########","#S.....E#","##.##.###","##.##.###","#########"],"guards":[[[2,1],[3,1],[4,1],[5,1],[6,1],[5,1],[4,1],[3,1]]]},{"name":"الأشواك","hint":"الأشواك بتقتلك بس. النسخ مش بتتأذي","par":1,"max":2,"map":["#########","#S.x.x.E#","#a#.#.#A#","#.......#","#########"]},{"name":"الغرفة المحروسة","hint":"النسخة بتفتح الباب والحارس بيلف في الأوضة التانية","par":1,"max":2,"map":["#########","#S..#..E#","#...A...#","#.a.#...#","#########"],"guards":[[[5,1],[6,1],[7,1],[7,2],[7,3],[6,3],[5,3],[5,2]]]},{"name":"اتنين لازم مع بعض","hint":"الباب مش بيفتح غير لما كل اللوح عليها حد. استنى لو احتجت","par":2,"max":3,"map":["#########","#a.S..a.#","####A####","####E####","#########"]},{"name":"الممر الطويل","hint":"الحارس واقف عند اللوحة التانية. حاول توقيتك","par":2,"max":3,"map":["###########","#S.a.A....#","#########.#","#E.B.b....#","########.##","###########"],"guards":[[[9,3],[8,3],[7,3],[8,3]]]},{"name":"الحارس والتوأم","hint":"لوحتين والحارس رايح جاي بينهم","par":2,"max":3,"map":["###.#.###","#a.S..a.#","####A####","####E####","#########"],"guards":[[[4,1],[5,1],[6,1],[5,1]]]},{"map":["#########","#BE#..###","#.#..##.#","#A......#","##....ab#","##b..S#.#","#########"],"guards":[[[3,3],[4,3],[5,3],[6,3],[5,3],[4,3]]],"max":3,"par":3,"name":"حراسة 1","hint":"الحارس بيروح ويجي. وقتك صح"},{"map":["#########","#E#m.#a##","#..#.#..#","##A....##","#..a#l#.#","##.Sm.#.#","#########"],"guards":[],"max":3,"par":2,"name":"ليزر 1","hint":"الليزر بيشتغل ويقف كل ثانيتين. النسخ مش بيأذيها"},{"map":["#########","#.#aa..1#","#EB..A..#","#.#b#...#","###...1##","#..#Sb..#","#########"],"guards":[],"max":3,"par":2,"name":"بوابات 1","hint":"المشي على الدايرة بيرميك للدايرة التانية. النسخ كمان بتستخدمها"},{"map":["#########","#Sb#.#ax#","#....a.x#","##.A...##","#.b.#x..#","##.#EB.##","#########"],"guards":[],"max":3,"par":2,"name":"أشواك 1","hint":"الأشواك ليك بس. النسخ بتعدي عليها"},{"map":["#########","##..#.#.#","#....a..#","#.#..##.#","#....#E##","#Sa.A1.1#","#########"],"guards":[],"max":3,"par":2,"name":"بوابات 2","hint":"المشي على الدايرة بيرميك للدايرة التانية. النسخ كمان بتستخدمها"},{"map":["#########","#.m.#..a#","#..Sl...#","#.a.#B#.#","#..#b..##","#.mA.b.E#","#########"],"guards":[],"max":3,"par":2,"name":"ليزر 2","hint":"الليزر بيشتغل ويقف كل ثانيتين. النسخ مش بيأذيها"},{"map":["#########","#E.#.#..#","#.A##..a#","##.....a#","##..#...#","#...S...#","#########"],"guards":[[[5,3],[5,4],[5,5],[5,4]]],"max":3,"par":2,"name":"حراسة 2","hint":"الحارس بيروح ويجي. وقتك صح"},{"map":["#########","##.#..#.#","#...B.AE#","##.###.x#","##..a#x##","#.x.S.b.#","#########"],"guards":[],"max":3,"par":2,"name":"أشواك 2","hint":"الأشواك ليك بس. النسخ بتعدي عليها"}];
+const LEVELS=[{"name":"أول حلقة","hint":"قف على اللوحة، ابدأ حلقة جديدة، وبعدين نسختك هتفتحلك الباب","par":1,"max":2,"map":["#########","#S.a.A.E#","#########"]},{"name":"بابين ورا بعض","hint":"كل نسخة بتعيد حركاتك بالظبط","par":2,"max":3,"map":["#########","#S.a.A..#","#######.#","#E.B.b..#","#########"]},{"name":"الحارس","hint":"استخبى في الحفرة لما الحارس يعدي","par":0,"max":1,"map":["#########","#S.....E#","##.##.###","##.##.###","#########"],"guards":[[[2,1],[3,1],[4,1],[5,1],[6,1],[5,1],[4,1],[3,1]]]},{"name":"الأشواك","hint":"الأشواك بتقتلك بس. النسخ مش بتتأذي","par":1,"max":2,"map":["#########","#S.x.x.E#","#a#.#.#A#","#.......#","#########"]},{"name":"الغرفة المحروسة","hint":"النسخة بتفتح الباب والحارس بيلف في الأوضة التانية","par":1,"max":2,"map":["#########","#S..#..E#","#...A...#","#.a.#...#","#########"],"guards":[[[5,1],[6,1],[7,1],[7,2],[7,3],[6,3],[5,3],[5,2]]]},{"name":"اتنين لازم مع بعض","hint":"الباب مش بيفتح غير لما كل اللوح عليها حد. استنى لو احتجت","par":2,"max":3,"map":["#########","#a.S..a.#","####A####","####E####","#########"]},{"name":"الممر الطويل","hint":"الحارس واقف عند اللوحة التانية. حاول توقيتك","par":2,"max":3,"map":["###########","#S.a.A....#","#########.#","#E.B.b....#","########.##","###########"],"guards":[[[9,3],[8,3],[7,3],[8,3]]]},{"name":"الحارس والتوأم","hint":"لوحتين والحارس رايح جاي بينهم","par":2,"max":3,"map":["###.#.###","#a.S..a.#","####A####","####E####","#########"],"guards":[[[4,1],[5,1],[6,1],[5,1]]]},{"map":["#########","#BE#..###","#.#..##.#","#A......#","##....ab#","##b..S#.#","#########"],"guards":[[[3,3],[4,3],[5,3],[6,3],[5,3],[4,3]]],"max":3,"par":3,"name":"حراسة 1","hint":"الحارس بيروح ويجي. وقتك صح"},{"map":["#########","#E#m.#a##","#..#.#..#","##A....##","#..a#l#.#","##.Sm.#.#","#########"],"guards":[],"max":3,"par":2,"name":"ليزر 1","hint":"الليزر بيشتغل ويقف كل ثانيتين. النسخ مش بيأذيها"},{"map":["#########","#.#aa..1#","#EB..A..#","#.#b#...#","###...1##","#..#Sb..#","#########"],"guards":[],"max":3,"par":2,"name":"بوابات 1","hint":"المشي على الدايرة بيرميك للدايرة التانية. النسخ كمان بتستخدمها"},{"map":["#########","#Sb#.#ax#","#....a.x#","##.A...##","#.b.#x..#","##.#EB.##","#########"],"guards":[],"max":3,"par":2,"name":"أشواك 1","hint":"الأشواك ليك بس. النسخ بتعدي عليها"},{"map":["#########","##..#.#.#","#....a..#","#.#..##.#","#....#E##","#Sa.A1.1#","#########"],"guards":[],"max":3,"par":2,"name":"بوابات 2","hint":"المشي على الدايرة بيرميك للدايرة التانية. النسخ كمان بتستخدمها"},{"map":["#########","#.m.#..a#","#..Sl...#","#.a.#B#.#","#..#b..##","#.mA.b.E#","#########"],"guards":[],"max":3,"par":2,"name":"ليزر 2","hint":"الليزر بيشتغل ويقف كل ثانيتين. النسخ مش بيأذيها"},{"map":["#########","#E.#.#..#","#.A##..a#","##.....a#","##..#...#","#...S...#","#########"],"guards":[[[5,3],[5,4],[5,5],[5,4]]],"max":3,"par":2,"name":"حراسة 2","hint":"الحارس بيروح ويجي. وقتك صح"},{"map":["#########","##.#..#.#","#...B.AE#","##.###.x#","##..a#x##","#.x.S.b.#","#########"],"guards":[],"max":3,"par":2,"name":"أشواك 2","hint":"الأشواك ليك بس. النسخ بتعدي عليها"},{"map":["#########","#E...>.a#","#.###..>#","#A..>.S.#","#.<.#..a#","#>.....##","#########"],"guards":[],"max":3,"par":2,"name":"سيور 1","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#S.bA..E#","##...#.##","#v..#..##","#.a>.<v##","#a..<.#B#","#########"],"guards":[],"max":3,"par":2,"name":"سيور 2","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#b..##.##","#...aA>.#","##..SB<##","#vbv#...#","##.#E.^.#","#########"],"guards":[],"max":3,"par":2,"name":"سيور 3","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#.#####.#","###.v...#","#.>.#...#","#A<.va.S#","#E##a.v.#","#########"],"guards":[],"max":3,"par":2,"name":"سيور 4","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#<a<v.#.#","#.#.#<.<#","#.#..#a.#","#AE..##.#","#....##S#","#########"],"guards":[],"max":3,"par":2,"name":"سيور 5","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#....#..#","#a.#.#S.#","#>>...#.#","#.A#^...#","#Ev.#a.>#","#########"],"guards":[],"max":3,"par":2,"name":"سيور 6","hint":"الأسهم بتزقك خطوة زيادة في اتجاهها"},{"map":["#########","#...B...#","#l.#...b#","#a..#..S#","#ma.##b.#","#EA##.l.#","#########"],"guards":[],"max":3,"par":2,"name":"ليزر 3","hint":"الليزر بيشتغل ويقف كل ثانيتين"}];
 function mkRng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function genLevel(seed,kind,minK){
   const rnd=mkRng(seed),ri=n=>Math.floor(rnd()*n),W=9,H=7;
@@ -104,6 +106,7 @@ function genLevel(seed,kind,minK){
     if(kind==='tele'){let p=free();if(!p)continue;g[p[1]][p[0]]='1';p=free();if(!p)continue;g[p[1]][p[0]]='1'}
     if(kind==='laser'){for(let i=0;i<3;i++){const p=free();if(p)g[p[1]][p[0]]=rnd()<.5?'l':'m'}}
     if(kind==='spike'){for(let i=0;i<3;i++){const p=free();if(p)g[p[1]][p[0]]='x'}}
+    if(kind==='conv'){for(let i=0;i<5;i++){const p=free();if(p)g[p[1]][p[0]]='^v<>'[ri(4)]}}
     if(kind==='guard'){const p0=free();if(!p0)continue;const dx=rnd()<.5,p=[p0];let cx=p0[0],cy=p0[1];for(let i=0;i<3;i++){const nx=cx+(dx?1:0),ny=cy+(dx?0:1);if(g[ny]&&g[ny][nx]==='.'){cx=nx;cy=ny;p.push([cx,cy])}else break}
       if(p.length<3)continue;guards.push(p.concat(p.slice(1,-1).reverse()))}
     const def={map:g.map(r=>r.join('')),guards,max:3};let L;try{L=parseLevel(def)}catch(er){continue}
@@ -116,6 +119,7 @@ const $=id=>document.getElementById(id);
 const cv=$('cv'),ctx2=cv.getContext('2d');
 const COL={a:'#f59e0b',b:'#c084fc',c:'#34d399',d:'#60a5fa'};
 const CLC=['#38bdf8','#f472b6','#a3e635','#fb923c','#e879f9'];
+const TH=[{w:'#232f55',t:'#34447a',a:'#10172e',b:'#0d1328',bg:'#141c3b'},{w:'#1f4d3a',t:'#2f7a58',a:'#0f2a22',b:'#0b211b',bg:'#103026'},{w:'#5a2a3c',t:'#8a3f5c',a:'#2a1020',b:'#220c1a',bg:'#3a1530'},{w:'#5b4a1f',t:'#8a7230',a:'#241d0c',b:'#1c1608',bg:'#3a2e10'}];let th=+(localStorage.getItem('tl_th')||0)%4;
 let prog={};try{prog=JSON.parse(localStorage.getItem('tl_prog')||'{}')}catch(e){}
 let mute=localStorage.getItem('tl_mute')==='1';
 let L,li=0,clones=[],cur=[],tickAt=0,prevT=0,state='menu',deadUntil=0,parts=[],shake=0,flash=0,won=false,time0=0;
@@ -167,8 +171,8 @@ function draw(now){requestAnimationFrame(draw);if(!L||state==='menu')return;
  const ph=Math.floor(now/TICK);
  // floor+walls
  for(let y=0;y<L.h;y++)for(let x=0;x<L.w;x++){
-  if(L.wall[y][x]){c.fillStyle='#232f55';rr(c,x*cs+1,y*cs+1,cs-2,cs-2,cs*.18);c.fill();c.fillStyle='#34447a';rr(c,x*cs+3,y*cs+2,cs-6,cs*.3,cs*.1);c.fill()}
-  else{c.fillStyle=(x+y)%2?'#10172e':'#0d1328';c.fillRect(x*cs,y*cs,cs,cs)}}
+  if(L.wall[y][x]){c.fillStyle=TH[th].w;rr(c,x*cs+1,y*cs+1,cs-2,cs-2,cs*.18);c.fill();c.fillStyle=TH[th].t;rr(c,x*cs+3,y*cs+2,cs-6,cs*.3,cs*.1);c.fill()}
+  else{c.fillStyle=(x+y)%2?TH[th].a:TH[th].b;c.fillRect(x*cs,y*cs,cs,cs)}}
  const acts=actorsAt(clones,cur[t],t);
  // clone paths
  clones.forEach((p,i)=>{c.strokeStyle=CLC[i%5]+'33';c.lineWidth=cs*.12;c.lineCap='round';c.beginPath();p.forEach((q,j)=>{const X=(q.x+.5)*cs,Y=(q.y+.5)*cs;j?c.lineTo(X,Y):c.moveTo(X,Y)});c.stroke()});
@@ -180,6 +184,8 @@ function draw(now){requestAnimationFrame(draw);if(!L||state==='menu')return;
  for(const k in L.lasers){const [x,y]=k.split(',').map(Number),on=((t+1)>>1&1)===L.lasers[k]&&false;const ph=(((t)>>1)&1)===L.lasers[k];const soon=(((t+1)>>1)&1)===L.lasers[k];
   c.fillStyle=soon?'rgba(244,63,94,.55)':'rgba(244,63,94,.12)';c.fillRect(x*cs+2,y*cs+2,cs-4,cs-4);c.strokeStyle='#f43f5e';c.lineWidth=2;c.setLineDash([3,3]);c.strokeRect(x*cs+3,y*cs+3,cs-6,cs-6);c.setLineDash([]);
   if(soon){c.shadowColor='#f43f5e';c.shadowBlur=14;c.fillStyle='#fecdd3';c.fillRect(x*cs+cs*.15,y*cs+cs*.45,cs*.7,cs*.1);c.shadowBlur=0}}
+ // conveyors
+ for(const k in L.conv){const [x,y]=k.split(',').map(Number),d=L.conv[k],cx=(x+.5)*cs,cy=(y+.5)*cs;const ang={'^':-Math.PI/2,'v':Math.PI/2,'<':Math.PI,'>':0}[d];c.save();c.translate(cx,cy);c.rotate(ang);const off=((now/400)%1)*cs*.25;c.fillStyle='rgba(45,212,191,.22)';c.fillRect(-cs*.45,-cs*.45,cs*.9,cs*.9);c.strokeStyle='#2dd4bf';c.lineWidth=3;c.lineCap='round';c.lineJoin='round';for(let i=-1;i<=1;i++){const o=i*cs*.2+off-cs*.05;c.beginPath();c.moveTo(o-cs*.1,-cs*.2);c.lineTo(o+cs*.1,0);c.lineTo(o-cs*.1,cs*.2);c.stroke()}c.restore()}
  // teles
  for(const k in L.tele){const [x,y]=k.split(',').map(Number);const cx=(x+.5)*cs,cy=(y+.5)*cs;for(let i=0;i<3;i++){c.strokeStyle='rgba(168,85,247,'+(.9-i*.25)+')';c.lineWidth=2.5;c.beginPath();c.arc(cx,cy,cs*(.12+.12*i)+Math.sin(now/260-i)*cs*.03,0,6.28);c.stroke()}}
  // spikes
@@ -212,6 +218,7 @@ function buildMenu(){const m=$('lv');m.innerHTML='';LEVELS.forEach((d,i)=>{const
  $('dly').textContent=localStorage.getItem('tl_daily')===dayKey()?'📅 لغز اليوم ✅':'📅 لغز اليوم';$('bst').textContent=best?'🔥 أحسن سلسلة عشوائي: '+best:'';const tot=Object.values(prog).reduce((a,b)=>a+b,0);$('tot').textContent='\u2066⭐ '+tot+' / '+LEVELS.length*3+'\u2069'}
 function showMenu(){state='menu';buildMenu();$('win').classList.remove('on');$('menu').classList.add('on')}
 $('bm').onclick=showMenu;$('nl').onclick=newLoop;$('ud').onclick=undo;$('rs').onclick=()=>{clearInterval(demoT);if(state==='demo')state='play';restart()};$('hb').onclick=demo;$('wt').onclick=()=>move('W');
+function applyTh(){cv.style.background='radial-gradient(circle at 50% 30%,'+TH[th].bg+',#070b18)'}applyTh();$('th').onclick=()=>{th=(th+1)%4;localStorage.setItem('tl_th',th);applyTh()};
 $('mu').onclick=()=>{mute=!mute;localStorage.setItem('tl_mute',mute?'1':'0');$('mu').textContent=mute?'🔇':'🔊'};$('mu').textContent=mute?'🔇':'🔊';
 $('nx').onclick=()=>{if(mode==='rand')startRand();else if(mode==='daily')showMenu();else loadLevel(li+1)};$('rp').onclick=()=>{if(mode==='camp')loadLevel(li);else loadDef(cust.def,cust.title)};$('wm').onclick=showMenu;
 document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();move(b.dataset.m)}));
@@ -225,10 +232,10 @@ window.__tl={play(seq){const runs=seq;return runs},move,newLoop,get s(){return{s
 let streak=0,best=+(localStorage.getItem('tl_best')||0);
 const dayKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
-function startRand(){const kinds=['spike','tele','laser','guard'];const sd=(Math.random()*1e9)|0;const kind=kinds[Math.min(kinds.length-1,Math.floor(Math.random()*(1+Math.min(3,streak/2))))];
+function startRand(){const kinds=['spike','conv','tele','laser','guard'];const sd=(Math.random()*1e9)|0;const kind=kinds[Math.min(kinds.length-1,Math.floor(Math.random()*(1+Math.min(4,streak/2))))];
  $('menu').classList.remove('on');$('win').classList.remove('on');$('hint').textContent='بيحضّر لغز...';
  setTimeout(()=>{const def=genLevel(sd,kind,Math.min(2,1+(streak>1?1:0)))||genLevel(sd+1,'spike',1);mode='rand';def.hint='لغز عشوائي رقم '+(streak+1)+' | أحسن سلسلة: '+best;cust={def,title:'🎲 عشوائي'};loadDef(def,'🎲 عشوائي  🔥'+streak)},30)}
-function startDaily(){const kinds=['spike','tele','laser','guard'];const h=hash(dayKey());const def=genLevel(h,kinds[h%4],2)||genLevel(h+1,'spike',1);mode='daily';def.hint='لغز اليوم: نفسه لكل الناس النهارده';cust={def,title:'📅 لغز اليوم'};$('menu').classList.remove('on');loadDef(def,'📅 لغز اليوم')}
+function startDaily(){const kinds=['spike','conv','tele','laser','guard'];const h=hash(dayKey());const def=genLevel(h,kinds[h%5],2)||genLevel(h+1,'spike',1);mode='daily';def.hint='لغز اليوم: نفسه لكل الناس النهارده';cust={def,title:'📅 لغز اليوم'};$('menu').classList.remove('on');loadDef(def,'📅 لغز اليوم')}
 $('rnd').onclick=()=>{au();streak=0;startRand()};$('dly').onclick=()=>{au();startDaily()};
 buildMenu();$('menu').classList.add('on');
 
