@@ -37,7 +37,8 @@ h1{margin:0 0 4px;font-size:34px;background:linear-gradient(90deg,#38bdf8,#c084f
 <div id="dp"><span></span><button data-m="U">▲</button><span></span><button data-m="L">◀</button><button id="wt">⏳</button><button data-m="R">▶</button><span></span><button data-m="D">▼</button><span></span></div>
 <div class="row"><button class="act" id="rs">🔄 من الأول</button></div></div></div>
 <div class="ov" id="menu"><h1>حلقة الزمن</h1><div class="sub">كل مرة تبدأ حلقة جديدة، نسخة من اللي عملته بتعيد حركاتك بالظبط وتساعدك. استخدم نسخك عشان تفتح الأبواب وتوصل للنجمة ⭐</div><div id="tot"></div><div style="display:flex;gap:8px;margin-bottom:6px"><button class="big" id="rnd" style="margin:0">🎲 لغز عشوائي</button><button class="big alt" id="dly" style="margin:0">📅 لغز اليوم</button></div><div id="bst" class="sub" style="margin:0 0 10px"></div><div id="lv"></div></div>
-<div class="ov" id="win"><div id="wst"></div><h1>عديتها!</h1><div id="wtx"></div><button class="big" id="nx">المرحلة الجاية ▶</button><button class="big alt" id="rp">أعيد المرحلة</button><button class="big alt" id="wm">القايمة</button></div>
+<div class="ov" id="win"><div id="wst"></div><h1>عديتها!</h1><div id="wtx"></div><button class="big" id="nx">المرحلة الجاية ▶</button><button class="big alt" id="shr">📤 شارك</button><button class="big alt" id="rp">أعيد المرحلة</button><button class="big alt" id="wm">القايمة</button></div>
+<div class="ov" id="tut" style="z-index:9"><div id="tem" style="font-size:64px"></div><div id="ttx" class="sub" style="font-size:18px;margin:14px 0 20px"></div><button class="big" id="tnx"></button></div>
 <script>
 const DIR={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0],W:[0,0]};
 const kk=(x,y)=>x+','+y;
@@ -146,7 +147,7 @@ function newLoop(){au();if(state!=='play'||cur.length<2||clones.length>=L.max)re
  clones.push(cur.slice());burstCell(cur[cur.length-1],CLC[(clones.length-1)%5],26);beep(300,.35,'sine',.08,900);
  cur=[{x:L.start.x,y:L.start.y}];prevT=0;tickAt=performance.now()-999;hud()}
 function undo(){if(state!=='play'||cur.length<2||performance.now()<deadUntil)return;cur.pop();prevT=cur.length-1;tickAt=performance.now()-999;beep(260,.06,'triangle',.04);hud()}
-let demoT=null,demoUsed=false,mode='camp',cust=null,curHint='';
+let lastShare='',demoT=null,demoUsed=false,mode='camp',cust=null,curHint='';
 function demo(){au();if(state!=='play')return;restart();const sol=solve(L,L.max,48);if(!sol){$('hint').textContent='مفيش حل';return}
  const ops=[];sol.forEach((r,i)=>{r.forEach(m=>ops.push(m));if(i<sol.length-1)ops.push('N')});let i=0;state='demo';demoUsed=true;
  $('hint').textContent='💡 بتفرج على الحل: '+(sol.length-1)+' نسخ';
@@ -154,9 +155,9 @@ function demo(){au();if(state!=='play')return;restart();const sol=solve(L,L.max,
   state='play';if(o==='N')newLoop();else move(o);if(state==='play')state='demo'},260)}
 function restart(){au();if(state!=='play')return;clones=[];cur=[{x:L.start.x,y:L.start.y}];prevT=0;tickAt=performance.now()-999;hud()}
 function win(){state='won';const k=clones.length,stars=demoUsed?1:k<=L.par?3:k<=L.par+1?2:1;
- if(mode==='camp'){const old=prog[li]||0;if(stars>old)prog[li]=stars}else if(mode==='rand'){streak++;if(streak>best){best=streak;localStorage.setItem('tl_best',best)}}else if(mode==='daily'){localStorage.setItem('tl_daily',dayKey())}try{localStorage.setItem('tl_prog',JSON.stringify(prog))}catch(e){}
+ if(mode==='camp'){const old=prog[li]||0;if(stars>old)prog[li]=stars;const bs=JSON.parse(localStorage.getItem('tl_bs')||'{}');if(!bs[li]||cur.length-1<bs[li]){bs[li]=cur.length-1;localStorage.setItem('tl_bs',JSON.stringify(bs))}}else if(mode==='rand'){streak++;if(streak>best){best=streak;localStorage.setItem('tl_best',best)}}else if(mode==='daily'){localStorage.setItem('tl_daily',dayKey())}try{localStorage.setItem('tl_prog',JSON.stringify(prog))}catch(e){}
  beep(523,.15,'triangle',.08);setTimeout(()=>beep(659,.15,'triangle',.08),130);setTimeout(()=>beep(784,.3,'triangle',.08),260);
- burstCell(L.exit,'#fde047',40);
+ burstCell(L.exit,'#fde047',40);for(let i=0;i<5;i++)setTimeout(()=>burstCell(L.exit,['#38bdf8','#f472b6','#a3e635','#fb923c'][i%4],30),i*140);lastShare='حلقة الزمن: '+(document.getElementById('lname').textContent)+' '+'⭐'.repeat(stars)+' بـ '+k+' نسخة و '+(cur.length-1)+' خطوة. جرب كمان: '+location.href.split('?')[0];
  setTimeout(()=>{$('wst').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);$('wtx').textContent=(demoUsed?'(بالحل) ':'')+'خلصتها بـ '+k+' نسخة و '+(cur.length-1)+' خطوة'+(stars<3?' (الأفضل '+L.par+' نسخة)':' 🔥');
   $('nx').style.display=(mode!=='camp'||li+1<LEVELS.length)?'':'none';$('nx').textContent=mode==='rand'?'اللغز الجاي ▶':mode==='daily'?'القايمة':'المرحلة الجاية ▶';$('win').classList.add('on')},700)}
 function geo(){const W=cv.clientWidth,H=cv.clientHeight,cs=Math.floor(Math.min((W-16)/L.w,(H-16)/L.h));return{cs,ox:Math.floor((W-cs*L.w)/2),oy:Math.floor((H-cs*L.h)/2)}}
@@ -213,14 +214,14 @@ function draw(now){requestAnimationFrame(draw);if(!L||state==='menu')return;
 }
 requestAnimationFrame(draw);
 // menu
-function buildMenu(){const m=$('lv');m.innerHTML='';LEVELS.forEach((d,i)=>{const b=document.createElement('button');const ok=i===0||prog[i-1]!==undefined;b.className='lb'+(ok?'':' lock');
+function buildMenu(){let BS={};try{BS=JSON.parse(localStorage.getItem('tl_bs')||'{}')}catch(e){}const m=$('lv');m.innerHTML='';LEVELS.forEach((d,i)=>{const b=document.createElement('button');const ok=i===0||prog[i-1]!==undefined;b.className='lb'+(ok?'':' lock');
  b.innerHTML='<b>'+(i+1)+'</b><span>'+d.name+'</span><i>'+(ok?('⭐'.repeat(prog[i]||0)+'☆'.repeat(3-(prog[i]||0))):'🔒')+'</i>';b.onclick=()=>{if(ok){au();loadLevel(i)}};m.appendChild(b)});
  $('dly').textContent=localStorage.getItem('tl_daily')===dayKey()?'📅 لغز اليوم ✅':'📅 لغز اليوم';$('bst').textContent=best?'🔥 أحسن سلسلة عشوائي: '+best:'';const tot=Object.values(prog).reduce((a,b)=>a+b,0);$('tot').textContent='\u2066⭐ '+tot+' / '+LEVELS.length*3+'\u2069'}
 function showMenu(){state='menu';buildMenu();$('win').classList.remove('on');$('menu').classList.add('on')}
 $('bm').onclick=showMenu;$('nl').onclick=newLoop;$('ud').onclick=undo;$('rs').onclick=()=>{clearInterval(demoT);if(state==='demo')state='play';restart()};$('hb').onclick=demo;$('wt').onclick=()=>move('W');
 function applyTh(){cv.style.background='radial-gradient(circle at 50% 30%,'+TH[th].bg+',#070b18)'}applyTh();$('th').onclick=()=>{th=(th+1)%4;localStorage.setItem('tl_th',th);applyTh()};
 $('mu').onclick=()=>{mute=!mute;localStorage.setItem('tl_mute',mute?'1':'0');$('mu').textContent=mute?'🔇':'🔊'};$('mu').textContent=mute?'🔇':'🔊';
-$('nx').onclick=()=>{if(mode==='rand')startRand();else if(mode==='daily')showMenu();else loadLevel(li+1)};$('rp').onclick=()=>{if(mode==='camp')loadLevel(li);else loadDef(cust.def,cust.title)};$('wm').onclick=showMenu;
+$('nx').onclick=()=>{if(mode==='rand')startRand();else if(mode==='daily')showMenu();else loadLevel(li+1)};$('rp').onclick=()=>{if(mode==='camp')loadLevel(li);else loadDef(cust.def,cust.title)};$('wm').onclick=showMenu;$('shr').onclick=async()=>{try{if(navigator.share)await navigator.share({text:lastShare});else{await navigator.clipboard.writeText(lastShare);$('shr').textContent='✅ اتنسخ'}}catch(e){}};
 document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();move(b.dataset.m)}));
 const KM={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R',w:'U',s:'D',a:'L',d:'R',' ':'W'};
 addEventListener('keydown',e=>{const k=KM[e.key];if(k){e.preventDefault();move(k)}else if(e.key==='n'||e.key==='Enter')newLoop();else if(e.key==='z'||e.key==='Backspace')undo();else if(e.key==='r')restart()});
@@ -238,5 +239,8 @@ function startRand(){const kinds=['spike','conv','tele','laser','guard'];const s
 function startDaily(){const kinds=['spike','conv','tele','laser','guard'];const h=hash(dayKey());const def=genLevel(h,kinds[h%5],2)||genLevel(h+1,'spike',1);mode='daily';def.hint='لغز اليوم: نفسه لكل الناس النهارده';cust={def,title:'📅 لغز اليوم'};$('menu').classList.remove('on');loadDef(def,'📅 لغز اليوم')}
 $('rnd').onclick=()=>{au();streak=0;startRand()};$('dly').onclick=()=>{au();startDaily()};
 buildMenu();$('menu').classList.add('on');
+let tp=0;const TUT=[['👥','دوس "حلقة جديدة" وكل حركاتك اللي فاتت بتتحول لنسخة بتعيدها لوحدها.'],['🟧','قف على اللوحة الملونة. الباب اللي بنفس اللون بيفتح طول ما حد واقف عليها.'],['⭐','وصل للنجمة. استخدم نسخك، واستنى بـ ⏳ لو احتجت توقيت. زر 💡 بيشغلك الحل.']];
+function tut(){if(localStorage.getItem('tl_tut')){$('tut').classList.remove('on');return}$('tut').classList.add('on');$('tem').textContent=TUT[tp][0];$('ttx').textContent=TUT[tp][1];$('tnx').textContent=tp<2?'التالي ▶':'يلا نلعب'}
+$('tnx').onclick=()=>{tp++;if(tp>2){localStorage.setItem('tl_tut','1');$('tut').classList.remove('on')}else tut()};tut();
 
 </script></body></html>
